@@ -6,25 +6,72 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
-    @State private var friends : [Friend] = [Friend(name:"Lennon Nichols", birthday: .now), Friend(name: "Lena", birthday: .now)]
+    @Query private var friends : [Friend]
+    //= [Friend(name:"Lennon Nichols", birthday: .now), Friend(name: "Lena", birthday: .now)]
     
+    @Environment(\.modelContext) private var context
+    
+    @State private var newName = ""
+    @State private var newBirthday = Date.now
     
     var body: some View {
         NavigationStack{
-            List(friends, id: \.name) { friend in
-                HStack{
-                    Text(friend.name)
-                    Spacer()
-                    Text(friend.birthday, format: .dateTime.month(.wide).day().year())
-                } //hstack
-            } //list
-            .navigationTitle("Birthdays")
-        } //nav
-    } //body
-} //struct
-
-#Preview {
-    ContentView()
+            List {
+                ForEach (friends) { friend in
+                    HStack{
+                        HStack{
+                            Text(friend.name)
+                            Spacer()
+                            Text(friend.birthday, format: .dateTime.month(.wide).day().year())
+                        }
+                    } //hstack
+                } //list
+                .navigationTitle("Birthdays")
+                .safeAreaInset(edge: .bottom){
+                    VStack(alignment: .center, spacing: 20){
+                        Text("New Birthday")
+                            .font(.headline)
+                        DatePicker(selection: $newBirthday, in: Date.distantPast...Date.now, displayedComponents: .date){
+                            TextField("Name", text: $newName)
+                                .textFieldStyle(.roundedBorder)
+                        }//DataPicker
+                        Button("Save") {
+                            let newFriend = Friend(name: newName, birthday: newBirthday)
+                            //friends.append(newFriend)
+                            context.insert(newFriend)
+                            newName = ""
+                            newBirthday = .now
+                        }//button
+                        .bold()
+                    } //Vstack
+                    .padding()
+                    .background(.bar)
+                } // Safe
+            } //nav
+        } //body
+        
+       
+    }//struct
+    func deleteFriend(at offsets: IndexSet) {
+        for index in offsets {
+            let friendToDelete = friends[index]
+            context.delete(friendToDelete)
+        }
+        
+    }
 }
+    
+    
+    
+    
+    
+    
+    #Preview {
+        ContentView()
+            .modelContainer(for: Friend.self, inMemory: true)
+        
+    }
+
